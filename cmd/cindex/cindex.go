@@ -14,9 +14,10 @@ import (
 	"sort"
 
 	"github.com/google/codesearch/index"
+	"github.com/google/codesearch/regexp"
 )
 
-var usageMessage = `usage: cindex [-list] [-reset] [path...]
+var usageMessage = `usage: cindex [-f fileregexp] [-verbose] [-list] [-reset] [path...]
 
 Cindex prepares the trigram index for use by csearch.  The index is the
 file named by $CSEARCHINDEX, or else $HOME/.csearchindex.
@@ -39,13 +40,20 @@ If cindex is invoked with no paths, it reindexes the paths that have
 already been added, in case the files have changed.  Thus, 'cindex' by
 itself is a useful command to run in a nightly cron job.
 
+The -f flag restricts the index to files whose names match the RE2 regular
+expression fileregexp.
+
+The -verbose flag logs some debug output during execution.
+
 The -list flag causes cindex to list the paths it has indexed and exit.
 
 By default cindex adds the named paths to the index but preserves 
 information about other paths that might already be indexed
-(the ones printed by cindex -list).  The -reset flag causes cindex to
-delete the existing index before indexing the new paths.
-With no path arguments, cindex -reset removes the index.
+(the ones printed by cindex -list).
+
+The -reset flag causes cindex to delete the existing index before
+indexing the new paths.  With no path arguments, cindex -reset removes
+the index.
 `
 
 func usage() {
@@ -54,6 +62,7 @@ func usage() {
 }
 
 var (
+	fFlag = flag.String("f", "", "index only files with names matching this regexp")
 	listFlag    = flag.Bool("list", false, "list indexed paths and exit")
 	resetFlag   = flag.Bool("reset", false, "discard existing index")
 	verboseFlag = flag.Bool("verbose", false, "print extra information")
@@ -71,6 +80,15 @@ func main() {
 			fmt.Printf("%s\n", arg)
 		}
 		return
+	}
+
+	var fre *regexp.Regexp
+	var err error
+	if *fFlag != "" {
+		fre, err = regexp.Compile(*fFlag)
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	if *cpuProfile != "" {
@@ -123,6 +141,7 @@ func main() {
 
 	ix := index.Create(file)
 	ix.Verbose = *verboseFlag
+	ix.LogSkip = true
 	ix.AddPaths(args)
 	for _, arg := range args {
 		log.Printf("index %s", arg)
@@ -138,6 +157,9 @@ func main() {
 			}
 			if err != nil {
 				log.Printf("%s: %s", path, err)
+				return nil
+			}
+			if fre != nil && fre.MatchString(path, true, true) < 0 {
 				return nil
 			}
 			if info != nil && info.Mode()&os.ModeType == 0 {
