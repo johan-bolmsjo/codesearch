@@ -13,8 +13,8 @@ import (
 	"runtime/pprof"
 	"sort"
 
-	"github.com/google/codesearch/index"
-	"github.com/google/codesearch/regexp"
+	"github.com/johan-bolmsjo/codesearch/index"
+	"github.com/johan-bolmsjo/codesearch/regexp"
 )
 
 var usageMessage = `usage: cindex [-f fileregexp] [-verbose] [-list] [-reset] [path...]
@@ -47,7 +47,7 @@ The -verbose flag logs some debug output during execution.
 
 The -list flag causes cindex to list the paths it has indexed and exit.
 
-By default cindex adds the named paths to the index but preserves 
+By default cindex adds the named paths to the index but preserves
 information about other paths that might already be indexed
 (the ones printed by cindex -list).
 
@@ -62,7 +62,7 @@ func usage() {
 }
 
 var (
-	fFlag = flag.String("f", "", "index only files with names matching this regexp")
+	fFlag       = flag.String("f", "", "index only files with names matching this regexp")
 	listFlag    = flag.Bool("list", false, "list indexed paths and exit")
 	resetFlag   = flag.Bool("reset", false, "discard existing index")
 	verboseFlag = flag.Bool("verbose", false, "print extra information")
